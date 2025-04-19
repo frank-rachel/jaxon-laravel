@@ -2,9 +2,9 @@
 namespace Jaxon\App\Ajax;
 
 /**
- * Back compat shim: Jaxon4 renamed the base class to Jaxon\App\App
+ * Backward‑compatibility shim for the old Jaxon 3 base class.
  */
 class AbstractApp extends \Jaxon\App\App
 {
-    // nothing here just inherit
+    /* nothing here – the alias is enough */
 }
