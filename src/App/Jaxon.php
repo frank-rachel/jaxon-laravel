@@ -4,7 +4,7 @@ namespace Jaxon\Laravel\App;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
-use Jaxon\App\Ajax\AbstractApp;
+use Jaxon\App\App;           //  <── the real Jaxon base
 use Jaxon\Exception\SetupException;
 
 use function asset;
@@ -13,7 +13,7 @@ use function public_path;
 use function response;
 use function route;
 
-class Jaxon extends AbstractApp
+class Jaxon extends App
 {
     /**
      * Setup the Jaxon library
@@ -90,12 +90,20 @@ class Jaxon extends AbstractApp
     /**
      * @inheritDoc
      */
-    public function httpResponse(string $sCode = '200')
-    {
-        // Create and return a Laravel HTTP response
-        $httpResponse = response($this->ajaxResponse()->getOutput(), $sCode);
-        $httpResponse->header('Content-Type', $this->getContentType());
+    // public function httpResponse(string $sCode = '200')
+    // {
+        // $httpResponse = response($this->ajaxResponse()->getOutput(), $sCode);
+        // $httpResponse->header('Content-Type', $this->getContentType());
 
-        return $httpResponse;
-    }
+        // return $httpResponse;
+    // }
+    public function httpResponse(string $status = '200')
+    {
+        return response(
+            $this->ajaxResponse()->getOutput(),
+            $status,
+            ['Content‑Type' => $this->getContentType()]
+        );
+    }	
+	
 }
