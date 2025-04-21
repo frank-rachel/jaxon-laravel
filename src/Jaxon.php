@@ -1,19 +1,18 @@
 <?php
 /**
- *  vendor/frank-rachel/jaxon-laravel/src/App/Jaxon.php
+ *  vendor/frank-rachel/jaxon-laravel/src/Jaxon.php
  *
- *  Tiny shim that lets legacy code refer to the class
- *  Jaxon\Laravel\Jaxon while, under the hood, we simply use the
- *  framework‑agnostic core Jaxon application.
+ *  Lightweight back‑compat facade: it just *is* the core Jaxon\App\App.
+ *  Do **not** extend the Laravel‑specific class in App\Jaxon to avoid
+ *  circular inheritance.
  */
-
 namespace Jaxon\Laravel;
 
-use Jaxon\App\App;            // concrete core class
-use Jaxon\App\AppInterface;   // the interface Jaxon expects
+use Jaxon\App\App;            // concrete class shipped with jaxon-core
+use Jaxon\App\AppInterface;   // interface jaxon expects
 
 class Jaxon extends App implements AppInterface
 {
-    // No extra code required – every method we need already exists on
-    // \Jaxon\App\App.  We just provide the old class‑name for BC.
+    // Nothing more: we inherit every needed method from App
 }
+
