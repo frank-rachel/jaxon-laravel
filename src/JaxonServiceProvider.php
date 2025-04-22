@@ -1,11 +1,17 @@
 <?php
+/**
+ *  vendor/frank-rachel/jaxon-laravel/src/JaxonServiceProvider.php
+ *
+ *  Patched for jaxon‑core ≥4.8
+ */
 
 namespace Jaxon\Laravel;
 
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\ServiceProvider;
 use Jaxon\App\AppInterface;
 use Jaxon\Exception\SetupException;
-use Jaxon\Laravel\App\Jaxon;
+use Jaxon\Laravel\App\Jaxon as LaravelJaxon;
 use Jaxon\Laravel\Middleware\AjaxMiddleware;
 use Jaxon\Laravel\Middleware\ConfigMiddleware;
 
@@ -16,67 +22,59 @@ use function response;
 
 class JaxonServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap the application events.
-     *
-     * @return void
-     */
-    public function boot()
+    /* -------------------------------------------------------------------- */
+    /*  Boot                                                                */
+    /* -------------------------------------------------------------------- */
+    public function boot(): void
     {
-        // Register the Jaxon application
-        jaxon()->di()->set(AppInterface::class, function() {
-            return $this->app->make(Jaxon::class);
+        /** 1.Bind the interface Jaxon expects to the Laravel implementation */
+        jaxon()->di()->set(AppInterface::class, function () {
+            return $this->app->make(LaravelJaxon::class);
         });
 
-        // Config source and destination files
-        $configSrcFile = __DIR__ . '/../config/config.php';
-        $configDstFile = config_path('jaxon.php');
+        /** 2.Publish the package config */
+        $this->publishes(
+            [__DIR__.'/../config/config.php' => config_path('jaxon.php')],
+            'config'
+        );
 
-        // Publish assets and config
-        $this->publishes([
-            $configSrcFile => $configDstFile,
-        ], 'config');
-
-        /** \Illuminate\Routing\Router $router */
+        /** 3.Middleware + route that receives Ajax payloads */
+        /** @var \Illuminate\Routing\Router $router */
         $router = $this->app->make('router');
 
-        // Register the middleware and route
         $router->aliasMiddleware('jaxon.config', ConfigMiddleware::class);
-        $router->aliasMiddleware('jaxon.ajax', AjaxMiddleware::class);
-        if(is_string(($jaxonRoute = config('jaxon.app.request.route', null))))
-        {
-            $jaxonMiddlewares = config('jaxon.app.request.middlewares', []);
-            if(!in_array('jaxon.config', $jaxonMiddlewares))
-            {
-                $jaxonMiddlewares[] = 'jaxon.config';
-            }
-            if(!in_array('jaxon.ajax', $jaxonMiddlewares))
-            {
-                $jaxonMiddlewares[] = 'jaxon.ajax';
-            }
-            $router->post($jaxonRoute, function() {
-                return response()->json([]); // This is not supposed to be executed.
-            })->middleware($jaxonMiddlewares)->name('jaxon');
+        $router->aliasMiddleware('jaxon.ajax',   AjaxMiddleware::class);
+
+        if (is_string($route = config('jaxon.app.request.route'))) {
+            $mw = array_unique(array_merge(
+                (array)config('jaxon.app.request.middlewares', []),
+                ['jaxon.config', 'jaxon.ajax']
+            ));
+
+            $router->post($route, fn () => response()->json([]))
+                   ->middleware($mw)
+                   ->name('jaxon');
         }
 
-        if(config('jaxon.app.helpers.load', true))
-        {
-            // Load the Jaxon helpers
-            require_once(config('jaxon.app.helpers.path', __DIR__ . '/helpers.php'));
+        /** 4.Optionally load the helper functions */
+        if (config('jaxon.app.helpers.load', true)) {
+            require_once config('jaxon.app.helpers.path', __DIR__.'/helpers.php');
         }
     }
 
+    /* -------------------------------------------------------------------- */
+    /*  Register                                                            */
+    /* -------------------------------------------------------------------- */
     /**
-     * Register the service provider.
+     * Register the single, shared Jaxon instance.
      *
-     * @return void
      * @throws SetupException
      */
-    public function register()
+    public function register(): void
     {
-        // Register the Jaxon singleton
-        $this->app->singleton(Jaxon::class, function() {
-            $jaxon = new Jaxon();
+        $this->app->singleton(LaravelJaxon::class, function (Container $app) {
+            //  NOTE: jaxon‑core ≥4.8 requires the container in the constructor
+            $jaxon = new LaravelJaxon($app);   // ←‑ pass $app here
             $jaxon->setup('');
             return $jaxon;
         });
