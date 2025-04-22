@@ -12,6 +12,8 @@ use function config;
 use function public_path;
 use function response;
 use function route;
+use Jaxon\Di\Container;
+
 
 class Jaxon extends App
 {
@@ -20,6 +22,13 @@ class Jaxon extends App
      *
      * @throws SetupException
      */
+	 
+    public function __construct()
+    {
+        // Pass the current object to the new DI container
+        parent::__construct(new Container($this));
+    }
+	
     public function setup(string $_ = '')
     {
         // Directives for Jaxon custom attributes
