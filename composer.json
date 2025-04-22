@@ -18,10 +18,11 @@
         "jaxon-php/jaxon-view-blade": "dev-main"
     },
     "autoload": {
-        "psr-4": {
-            "Jaxon\\Laravel\\": "src/"
-        }
-    },
+		"psr-4": { "Jaxon\\Laravel\\": "src/" },
+		"files": [
+			"src/helpers.php" 
+		]
+	},
     "extra": {
         "laravel": {
             "providers": [
