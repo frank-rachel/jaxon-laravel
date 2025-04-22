@@ -1,10 +1,12 @@
 <?php
+/*  vendor/frank-rachel/jaxon-laravel/src/App/Jaxon.php  */
 
 namespace Jaxon\Laravel\App;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
-use Jaxon\App\App;           //  <── the real Jaxon base
+use Jaxon\App\Ajax\AbstractApp;           // ← keep the Ajax base class
+use Jaxon\Di\Container;                   // new DI container
 use Jaxon\Exception\SetupException;
 
 use function asset;
@@ -12,107 +14,77 @@ use function config;
 use function public_path;
 use function response;
 use function route;
-use Jaxon\Di\Container;
 
-
-class Jaxon extends App
+class Jaxon extends AbstractApp
 {
+    /* ---------------------------------------------------------------------
+     |  No custom __construct() – parent one is fine.
+     |  The DI container is injected a bit later inside setup().
+     |-------------------------------------------------------------------- */
+
     /**
-     * Setup the Jaxon library
+     * Configure Jaxon for the Laravel runtime.
      *
      * @throws SetupException
      */
-	 
-    public function __construct()
+    public function setup(string $_ = ''): void
     {
-        // Pass the current object to the new DI container
-        parent::__construct(new Container($this));
-    }
-	
-    public function setup(string $_ = '')
-    {
-        // Directives for Jaxon custom attributes
-        Blade::directive('jxnHtml', function($expression) {
-            return '<?php echo Jaxon\attr()->html(' . $expression . '); ?>';
-        });
-        Blade::directive('jxnBind', function($expression) {
-            return '<?php echo Jaxon\attr()->bind(' . $expression . '); ?>';
-        });
-        Blade::directive('jxnPagination', function($expression) {
-            return '<?php echo Jaxon\attr()->pagination(' . $expression . '); ?>';
-        });
-        Blade::directive('jxnOn', function($expression) {
-            return '<?php echo Jaxon\attr()->on(' . $expression . '); ?>';
-        });
-        Blade::directive('jxnClick', function($expression) {
-            return '<?php echo Jaxon\attr()->click(' . $expression . '); ?>';
-        });
-        Blade::directive('jxnEvent', function($expression) {
-            return '<?php echo Jaxon\attr()->event(' . $expression . '); ?>';
-        });
-        Blade::directive('jxnTarget', function($expression) {
-            return '<?php echo Jaxon\attr()->target(' . $expression . '); ?>';
-        });
+        /* --------------------------------------------------------------- *
+         |  1)  Blade directives for Jaxon helpers
+         * --------------------------------------------------------------- */
+        Blade::directive('jxnHtml',       fn($e) => '<?php echo Jaxon\attr()->html('       .$e.'); ?>');
+        Blade::directive('jxnBind',       fn($e) => '<?php echo Jaxon\attr()->bind('       .$e.'); ?>');
+        Blade::directive('jxnPagination', fn($e) => '<?php echo Jaxon\attr()->pagination(' .$e.'); ?>');
+        Blade::directive('jxnOn',         fn($e) => '<?php echo Jaxon\attr()->on('         .$e.'); ?>');
+        Blade::directive('jxnClick',      fn($e) => '<?php echo Jaxon\attr()->click('      .$e.'); ?>');
+        Blade::directive('jxnEvent',      fn($e) => '<?php echo Jaxon\attr()->event('      .$e.'); ?>');
+        Blade::directive('jxnTarget',     fn($e) => '<?php echo Jaxon\attr()->target('     .$e.'); ?>');
 
-        // Directives for Jaxon Js and CSS codes
-        Blade::directive('jxnCss', function() {
-            return '<?php echo Jaxon\jaxon()->css(); ?>';
-        });
-        Blade::directive('jxnJs', function() {
-            return '<?php echo Jaxon\jaxon()->js(); ?>';
-        });
-        Blade::directive('jxnScript', function($expression) {
-            return '<?php echo Jaxon\jaxon()->script(' . $expression . '); ?>';
-        });
+        Blade::directive('jxnCss',    fn()    => '<?php echo Jaxon\jaxon()->css(); ?>');
+        Blade::directive('jxnJs',     fn()    => '<?php echo Jaxon\jaxon()->js(); ?>');
+        Blade::directive('jxnScript', fn($e)  => '<?php echo Jaxon\jaxon()->script(' .$e.'); ?>');
 
-        // Add the view renderer
-        $this->addViewRenderer('blade', '', function () {
-            return new View();
-        });
-        // Set the session manager
-        $this->setSessionManager(function () {
-            return new Session();
-        });
-        // Set the framework service container wrapper
-        $this->setContainer(new Container());
-        // Set the logger
+        /* --------------------------------------------------------------- *
+         |  2)  Laravel runtime bridges
+         * --------------------------------------------------------------- */
+        $this->addViewRenderer('blade', '', static fn () => new View());
+        $this->setSessionManager(static fn () => new Session());
+
+        /*  The container now REQUIRES an object implementing the Ajax
+            interface – $this is good enough.                           */
+        $this->setContainer(new Container($this));
+
         $this->setLogger(Log::getLogger());
 
-        // The request URI can be set with a named route
-        if(!config('jaxon.lib.core.request.uri') && ($route = config('jaxon.app.request.route', 'jaxon')))
-        {
+        /* --------------------------------------------------------------- *
+         |  3)  Request URI and configuration
+         * --------------------------------------------------------------- */
+        if (!config('jaxon.lib.core.request.uri')
+         && ($route = config('jaxon.app.request.route', 'jaxon'))) {
             $this->uri(route($route));
         }
 
-        // Load Jaxon config settings
-        $aLibOptions = config('jaxon.lib', []);
-        $aAppOptions = config('jaxon.app', []);
-        $bExport = $bMinify = !config('app.debug', false);
-
         $this->bootstrap()
-            ->lib($aLibOptions)
-            ->app($aAppOptions)
-            ->asset($bExport, $bMinify, asset('jaxon/js'), public_path('jaxon/js'))
-            ->setup();
+             ->lib(config('jaxon.lib', []))
+             ->app(config('jaxon.app', []))
+             ->asset(
+                 $export = !config('app.debug', false),
+                 $minify = $export,
+                 asset('jaxon/js'),
+                 public_path('jaxon/js')
+             )
+             ->setup();
     }
 
     /**
-     * @inheritDoc
+     * Return the HTTP response for a Jaxon Ajax call.
      */
-    // public function httpResponse(string $sCode = '200')
-    // {
-        // $httpResponse = response($this->ajaxResponse()->getOutput(), $sCode);
-        // $httpResponse->header('Content-Type', $this->getContentType());
-
-        // return $httpResponse;
-    // }
     public function httpResponse(string $status = '200')
     {
         return response(
             $this->ajaxResponse()->getOutput(),
             $status,
-            ['Content‑Type' => $this->getContentType()]
+            ['Content-Type' => $this->getContentType()]
         );
-    }	
-	
+    }
 }
