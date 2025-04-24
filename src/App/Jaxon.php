@@ -5,7 +5,8 @@ namespace Jaxon\Laravel\App;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
-use Jaxon\App\Ajax\AbstractApp;           // ← keep the Ajax base class
+use Jaxon\App\App;           
+// use Jaxon\App\Ajax\AbstractApp;           // ← keep the Ajax base class
 use Jaxon\Di\Container;                   // new DI container
 use Jaxon\Exception\SetupException;
 
@@ -15,13 +16,13 @@ use function public_path;
 use function response;
 use function route;
 
-class Jaxon extends AbstractApp
+class Jaxon extends App
 {
-    /* ---------------------------------------------------------------------
-     |  No custom __construct() – parent one is fine.
-     |  The DI container is injected a bit later inside setup().
-     |-------------------------------------------------------------------- */
-
+    public function __construct()
+    {
+        // Pass the current instance to Jaxon’s DI container
+        parent::__construct(new Container($this));
+    }
     /**
      * Configure Jaxon for the Laravel runtime.
      *
@@ -51,8 +52,8 @@ class Jaxon extends AbstractApp
         $this->setSessionManager(static fn () => new Session());
 
         /*  The container now REQUIRES an object implementing the Ajax
-            interface – $this is good enough.                           */
-        $this->setContainer(new Container($this));
+            interface –$this is good enough.                           */
+        // $this->setContainer(new Container($this));
 
         $this->setLogger(Log::getLogger());
 

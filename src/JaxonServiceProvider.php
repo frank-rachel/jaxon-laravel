@@ -75,7 +75,8 @@ class JaxonServiceProvider extends ServiceProvider
         $this->app->singleton(LaravelJaxon::class, function (Container $app) {
             //  NOTE: jaxon‑core ≥4.8 requires the container in the constructor
             $jaxon = new LaravelJaxon($app);   // ←‑ pass $app here
-            $jaxon->setup('');
+            // $jaxon->setup('');
+            $jaxon->setup();
             return $jaxon;
         });
     }
