@@ -5,8 +5,7 @@ namespace Jaxon\Laravel\App;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
-use Jaxon\App\App;  
-use Jaxon\App\Ajax;         
+use Jaxon\App\App;           
 // use Jaxon\App\Ajax\AbstractApp;           // ← keep the Ajax base class
 use Jaxon\Di\Container;                   // new DI container
 use Jaxon\Exception\SetupException;
@@ -17,8 +16,7 @@ use function public_path;
 use function response;
 use function route;
 
-// class Jaxon extends App
-class Jaxon extends App implements Ajax
+class Jaxon extends App
 {
     public function __construct()
     {
