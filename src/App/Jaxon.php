@@ -1,15 +1,18 @@
 <?php
+/*  vendor/frank-rachel/jaxon-laravel/src/App/Jaxon.php  */
 
 namespace Jaxon\Laravel\App;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
-use Jaxon\App\Ajax;
-use Jaxon\App\Config\Config;
-use Jaxon\App\Response\Manager\ResponseManager;
-use Jaxon\App\Request\Factory\RequestFactory;
+
+// IMPORTANT: Use the new jaxon-core namespaces here
+use Jaxon\Ajax\Ajax;
+use Jaxon\Config\Config;
 use Jaxon\Di\Container;
 use Jaxon\Exception\SetupException;
+use Jaxon\Request\Factory\RequestFactory;
+use Jaxon\Response\Manager\ResponseManager;
 
 use function asset;
 use function config;
@@ -19,15 +22,12 @@ use function route;
 
 class Jaxon extends Ajax
 {
-    /**
-     * Build a Jaxon instance with custom Container.
-     */
     public function __construct(Config $xConfig, ResponseManager $xResponseManager, RequestFactory $xRequestFactory)
     {
         // Call parent constructor
         parent::__construct($xConfig, $xResponseManager, $xRequestFactory);
 
-        // Set the container (the DI constructor requires an Ajax instance)
+        // Set the DI container
         $this->xContainer = new Container(
             $this,
             $xConfig,
@@ -43,9 +43,7 @@ class Jaxon extends Ajax
      */
     public function setup(string $_ = ''): void
     {
-        /* --------------------------------------------------------------- *
-         |  1)  Blade directives for Jaxon helpers
-         * --------------------------------------------------------------- */
+        // 1) Blade directives
         Blade::directive('jxnHtml',       fn($e) => '<?php echo Jaxon\attr()->html('       .$e.'); ?>');
         Blade::directive('jxnBind',       fn($e) => '<?php echo Jaxon\attr()->bind('       .$e.'); ?>');
         Blade::directive('jxnPagination', fn($e) => '<?php echo Jaxon\attr()->pagination(' .$e.'); ?>');
@@ -58,22 +56,17 @@ class Jaxon extends Ajax
         Blade::directive('jxnJs',     fn()    => '<?php echo Jaxon\jaxon()->js(); ?>');
         Blade::directive('jxnScript', fn($e)  => '<?php echo Jaxon\jaxon()->script(' .$e.'); ?>');
 
-        /* --------------------------------------------------------------- *
-         |  2)  Laravel runtime bridges
-         * --------------------------------------------------------------- */
+        // 2) Laravel runtime bridges
         $this->addViewRenderer('blade', '', static fn () => new View());
         $this->setSessionManager(static fn () => new Session());
         $this->setLogger(Log::getLogger());
 
-        /* --------------------------------------------------------------- *
-         |  3)  Request URI and configuration
-         * --------------------------------------------------------------- */
+        // 3) Request URI and Jaxon config
         if(!config('jaxon.lib.core.request.uri') && ($route = config('jaxon.app.request.route', 'jaxon')))
         {
             $this->uri(route($route));
         }
 
-        // Load Jaxon config and asset settings
         $this->bootstrap()
              ->lib(config('jaxon.lib', []))
              ->app(config('jaxon.app', []))
