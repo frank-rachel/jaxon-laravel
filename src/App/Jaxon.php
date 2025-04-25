@@ -1,13 +1,14 @@
 <?php
-/*  vendor/frank-rachel/jaxon-laravel/src/App/Jaxon.php  */
 
 namespace Jaxon\Laravel\App;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
-use Jaxon\App\App;           
-// use Jaxon\App\Ajax\AbstractApp;           // ← keep the Ajax base class
-use Jaxon\Di\Container;                   // new DI container
+use Jaxon\App\Ajax;
+use Jaxon\App\Config\Config;
+use Jaxon\App\Response\Manager\ResponseManager;
+use Jaxon\App\Request\Factory\RequestFactory;
+use Jaxon\Di\Container;
 use Jaxon\Exception\SetupException;
 
 use function asset;
@@ -16,13 +17,25 @@ use function public_path;
 use function response;
 use function route;
 
-class Jaxon extends App
+class Jaxon extends Ajax
 {
-    public function __construct()
+    /**
+     * Build a Jaxon instance with custom Container.
+     */
+    public function __construct(Config $xConfig, ResponseManager $xResponseManager, RequestFactory $xRequestFactory)
     {
-        // Pass the current instance to Jaxon’s DI container
-        parent::__construct(new Container($this));
+        // Call parent constructor
+        parent::__construct($xConfig, $xResponseManager, $xRequestFactory);
+
+        // Set the container (the DI constructor requires an Ajax instance)
+        $this->xContainer = new Container(
+            $this,
+            $xConfig,
+            $xResponseManager,
+            $xRequestFactory
+        );
     }
+
     /**
      * Configure Jaxon for the Laravel runtime.
      *
@@ -50,21 +63,17 @@ class Jaxon extends App
          * --------------------------------------------------------------- */
         $this->addViewRenderer('blade', '', static fn () => new View());
         $this->setSessionManager(static fn () => new Session());
-
-        /*  The container now REQUIRES an object implementing the Ajax
-            interface –$this is good enough.                           */
-        // $this->setContainer(new Container($this));
-
         $this->setLogger(Log::getLogger());
 
         /* --------------------------------------------------------------- *
          |  3)  Request URI and configuration
          * --------------------------------------------------------------- */
-        if (!config('jaxon.lib.core.request.uri')
-         && ($route = config('jaxon.app.request.route', 'jaxon'))) {
+        if(!config('jaxon.lib.core.request.uri') && ($route = config('jaxon.app.request.route', 'jaxon')))
+        {
             $this->uri(route($route));
         }
 
+        // Load Jaxon config and asset settings
         $this->bootstrap()
              ->lib(config('jaxon.lib', []))
              ->app(config('jaxon.app', []))
