@@ -1,4 +1,5 @@
 <?php
+
 namespace Jaxon\Laravel;
 
 use Illuminate\Contracts\Container\Container;
@@ -17,6 +18,7 @@ class JaxonServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        // Provide the Jaxon\App\AppInterface
         jaxon()->di()->set(AppInterface::class, function () {
             return $this->app->make(LaravelJaxon::class);
         });
@@ -55,6 +57,7 @@ class JaxonServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Single shared instance
         $this->app->singleton(LaravelJaxon::class, function (Container $app) {
             $jaxon = new LaravelJaxon();
             $jaxon->setup();

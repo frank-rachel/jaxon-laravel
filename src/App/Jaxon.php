@@ -1,10 +1,10 @@
 <?php
+
 namespace Jaxon\Laravel\App;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
-// Notice it's AbstractApp, from jaxon-core 4.7
-use Jaxon\App\Ajax\AbstractApp; 
+use Jaxon\App\Ajax as JaxonAjax;
 use Jaxon\Exception\SetupException;
 
 use function asset;
@@ -13,7 +13,7 @@ use function public_path;
 use function route;
 use function response;
 
-class Jaxon extends AbstractApp
+class Jaxon extends JaxonAjax\AbstractApp
 {
     /**
      * Configure Jaxon for the Laravel runtime.
@@ -37,7 +37,7 @@ class Jaxon extends AbstractApp
         Blade::directive('jxnJs', fn() => '<?php echo Jaxon\\jaxon()->js(); ?>');
         Blade::directive('jxnScript', fn($e) => '<?php echo Jaxon\\jaxon()->script(' .$e.'); ?>');
 
-        // Logger and session
+        // Set up logger and session
         $this->setLogger(Log::getLogger());
         $this->addViewRenderer('blade', '', static fn () => new View());
         $this->setSessionManager(static fn () => new Session());
@@ -64,6 +64,7 @@ class Jaxon extends AbstractApp
      * Return the HTTP response for a Jaxon Ajax call.
      *
      * @param string $status
+     *
      * @return \Illuminate\Http\Response
      */
     public function httpResponse(string $status = '200')
