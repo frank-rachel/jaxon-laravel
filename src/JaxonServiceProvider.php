@@ -1,7 +1,6 @@
 <?php
 /**
  *  vendor/frank-rachel/jaxon-laravel/src/JaxonServiceProvider.php
- *  Patched for jaxon-core ≥4.8, Laravel 12
  */
 
 namespace Jaxon\Laravel;
@@ -26,6 +25,7 @@ class JaxonServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        // Provide the Jaxon\App\AppInterface, used by jaxon()->di() calls.
         jaxon()->di()->set(AppInterface::class, function () {
             return $this->app->make(LaravelJaxon::class);
         });
@@ -45,8 +45,7 @@ class JaxonServiceProvider extends ServiceProvider
                 (array)config('jaxon.app.request.middlewares', []),
                 ['jaxon.config', 'jaxon.ajax']
             ));
-
-            $router->post($route, fn () => response()->json([]))
+            $router->post($route, fn() => response()->json([]))
                    ->middleware($mw)
                    ->name('jaxon');
         }
@@ -63,6 +62,26 @@ class JaxonServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        /**
+         * 1) Bind the classes needed by the Jaxon constructor.
+         *    Adjust the array config below or load from a config file if desired.
+         */
+        $this->app->bind(Config::class, function() {
+            // Provide Jaxon with a base config array if needed
+            return new Config([]);
+        });
+
+        $this->app->bind(ResponseManager::class, function() {
+            return new ResponseManager();
+        });
+
+        $this->app->bind(RequestFactory::class, function() {
+            return new RequestFactory();
+        });
+
+        /**
+         * 2) Register the main LaravelJaxon singleton.
+         */
         $this->app->singleton(LaravelJaxon::class, function (Container $app) {
             $jaxon = new LaravelJaxon(
                 $app->make(Config::class),
