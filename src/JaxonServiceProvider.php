@@ -17,7 +17,6 @@ class JaxonServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        // Provide the Jaxon\App\AppInterface
         jaxon()->di()->set(AppInterface::class, function () {
             return $this->app->make(LaravelJaxon::class);
         });
@@ -32,7 +31,6 @@ class JaxonServiceProvider extends ServiceProvider
         $router->aliasMiddleware('jaxon.config', ConfigMiddleware::class);
         $router->aliasMiddleware('jaxon.ajax', AjaxMiddleware::class);
 
-        // Setup the route for Jaxon Ajax
         if(($sRoute = config('jaxon.app.request.route', 'jaxon')) && is_string($sRoute))
         {
             $aMiddlewares = array_unique(array_merge(
@@ -57,7 +55,6 @@ class JaxonServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // 1) Singleton
         $this->app->singleton(LaravelJaxon::class, function (Container $app) {
             $jaxon = new LaravelJaxon();
             $jaxon->setup();
